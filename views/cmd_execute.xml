@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openerp>
+    <data>
+
+        <record model="ir.ui.view" id="view_command_form">
+            <field name="name">cmd_execute.command.form</field>
+            <field name="model">cmd_execute.command</field>
+            <field name="arch" type="xml">
+                <form string="Object">
+                    <sheet>
+                        <div class="oe_title">
+                            <label for="name" class="oe_edit_only" />
+                            <h1>
+                                <field name="name" required="1" />
+                            </h1>
+                            <group>
+                                <field name="model_id" />
+                                <field name="cmd_type" />
+                                <field name="endpoints_id" domain="[('cmd_type','=', cmd_type)]" />
+                                <!-- field name="model_ids" invisible="1" / -->
+                            </group>
+                        </div>
+                        <div class="oe_right oe_button_box" name="buttons">
+                            <field name="ref_ir_act_window"
+                                invisible="1" />
+                            <button class="oe_inline oe_stat_button"
+                                name="create_action" type="object"
+                                attrs="{'invisible':[('ref_ir_act_window','!=',False)]}"
+                                icon="fa-plus"
+                                help="Display a button in the sidebar of related documents to open a composition wizard">
+                                <div>Add<br />Sidebar Button</div>
+                            </button>
+                            <button name="unlink_action" type="object"
+                                class="oe_stat_button" icon="fa-minus"
+                                attrs="{'invisible':[('ref_ir_act_window','=',False)]}"
+                                help="Remove the contextual action to use this template on related documents"
+                                widget="statinfo">
+                                <div>Remove<br />Sidebar Button</div>
+                            </button>
+                        </div>
+
+                        <notebook colspan="4">
+                            <page string="Powershell command">
+                                <group colspan="2" col="2">
+                                    <field name="ps_command_line" />
+                                </group>
+                            </page>
+                            <page string="Parameters">
+                                <field name="parameter_ids" colspan="4" context="{'default_command_id' : active_id, 'default_model_id' : model_id}">
+                                    <tree editable="bottom">
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="command_id" invisible="1"/>
+                                        <field name="model_id" invisible="1"/>
+                                        <field name="name"/>
+                                        <field name="field_id" domain="[('model_id','=',model_id)]"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            <page string="Return values">
+                                <field name="return_values_ids" colspan="4" context="{'default_command_id' : active_id, 'default_model_id' : model_id}">
+                                    <tree editable="bottom">
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="command_id" invisible="1"/>
+                                        <field name="model_id" invisible="1"/>
+                                        <field name="name"/>
+                                        <field name="field_id" domain="[('model_id','=',model_id)]"/>
+                                        <field name="return_type"/>
+                                        <field name="factor" read_only="[('return_type','!=','int')]"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            <page string="Advanced" attrs="{'invisible':[('ref_ir_act_window','=',False)]}">
+                                <group colspan="2" col="2">
+                                    <field name="ref_ir_act_window" />
+                                    <field name="ref_ir_value" />
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="view_command_tree">
+            <field name="name">cmd_execute.command.tree</field>
+            <field name="model">cmd_execute.command</field>
+            <field name="arch" type="xml">
+                <tree string="Command">
+                    <field name="name" />
+                    <field name="model_id" />
+                    <field name="cmd_type" />
+                </tree>
+            </field>
+        </record>
+
+
+        <record model="ir.ui.view" id="view_endpoints_form">
+            <field name="name">cmd_execute.endpoints.form</field>
+            <field name="model">cmd_execute.endpoints</field>
+            <field name="arch" type="xml">
+                <form string="Endpoint">
+                    <sheet>
+                        <div class="oe_title">
+                            <label for="name" class="oe_edit_only" />
+                            <h1>
+                                <field name="name" required="1" />
+                            </h1>
+                            <group>
+                                <field name="cmd_type" />
+                                <field name="credential_id" context="{'default_related_id' : active_id, 'default_model' : 'cmd_execute.endpoints' }"
+                                domain="[('model', '=', 'cmd_execute.endpoints'),('related_id', '=', active_id)]" />
+                                <field name="url" />
+                                <!-- field name="model_ids" invisible="1" / -->
+                            </group>
+                        </div>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="view_endpoints_tree">
+            <field name="name">cmd_execute.endpoints.tree</field>
+            <field name="model">cmd_execute.endpoints</field>
+            <field name="arch" type="xml">
+                <tree string="Endpoints">
+                    <field name="name" />
+                    <field name="url" />
+                </tree>
+            </field>
+        </record>
+
+        <record model="ir.actions.act_window" id="action_cmd_excute_form">
+            <field name="name">Command</field>
+            <field name="res_model">cmd_execute.command</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_id" ref="view_command_tree" />
+        </record>
+
+        <record model="ir.actions.act_window" id="action_cmd_endpoints_form">
+            <field name="name">Endpoint</field>
+            <field name="res_model">cmd_execute.endpoints</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_id" ref="view_endpoints_tree" />
+        </record>
+
+
+        <record id="action_mass_object_form_view1" model="ir.actions.act_window.view">
+            <field eval="10" name="sequence" />
+            <field name="view_mode">tree</field>
+            <field name="view_id" ref="view_command_tree" />
+            <field name="act_window_id" ref="action_cmd_excute_form" />
+        </record>
+        <record id="action_mass_object_form_view2" model="ir.actions.act_window.view">
+            <field eval="20" name="sequence" />
+            <field name="view_mode">form</field>
+            <field name="view_id" ref="view_command_form" />
+            <field name="act_window_id" ref="action_cmd_excute_form" />
+        </record>
+
+        <menuitem id="menu_cmd_excute" name="CMD execute"
+            parent="base.menu_administration" sequence="7" />
+
+        <menuitem id="menu_cmd_excute_view" action="action_cmd_excute_form"
+            parent="menu_cmd_excute" />
+
+        <menuitem id="menu_cmd_excute_endpoints_view" action="action_cmd_endpoints_form"
+            parent="menu_cmd_excute" />
+
+    </data>
+</openerp>

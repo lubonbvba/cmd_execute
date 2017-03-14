@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cmd_execute_endpoints,access_cmd_execute_endpoints,model_cmd_execute_endpoints,,1,0,0,0
+access_cmd_execute_parameters,access_cmd_execute_parameters,model_cmd_execute_parameters,,1,0,0,0
+access_cmd_execute_return_values,access_cmd_execute_return_values,model_cmd_execute_return_values,,1,0,0,0
+access_cmd_execute_command,access_cmd_execute_command,model_cmd_execute_command,,1,0,0,0
