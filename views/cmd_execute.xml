@@ -15,6 +15,7 @@
                             </h1>
                             <group>
                                 <field name="model_id" />
+                                <field name="method" />
                                 <field name="cmd_type" />
                                 <field name="endpoints_id" domain="[('cmd_type','=', cmd_type)]" />
                                 <!-- field name="model_ids" invisible="1" / -->
@@ -37,6 +38,13 @@
                                 widget="statinfo">
                                 <div>Remove<br />Sidebar Button</div>
                             </button>
+                            <button name="run_method" type="object"
+                                class="oe_stat_button" icon="fa-check"
+                                attrs="{'invisible':[('method','=',False)]}"
+                                help="Run the method"
+                                widget="statinfo">
+                                <div>Run<br />Method</div>
+                            </button>                            
                         </div>
 
                         <notebook colspan="4">
@@ -75,6 +83,19 @@
                                     <field name="ref_ir_value" />
                                 </group>
                             </page>
+                            <page string="History">
+                                <field name="history_ids" colspan="4" context="{'default_command_id' : active_id}" >
+                                    <tree editable="bottom">
+                                        <field name="command_id" invisible="1"/>
+                                        <field name="create_date"/>
+                                        <field name="create_uid"/>
+                                        <field name="cmd_line"/>
+                                        <field name="std_out"/>
+                                        <field name="std_err"/>
+                                    </tree>
+                                </field>
+
+                            </page>                           
                         </notebook>
                     </sheet>
                 </form>

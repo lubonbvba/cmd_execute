@@ -9,14 +9,27 @@ from openerp.tools.translate import _
 import json
 
 
+class cmd_execute_history(models.Model):
+
+    _name = 'cmd_execute.history'
+    _order = 'date_create desc'
+    name = fields.Char()
+    command_id=fields.Many2one('cmd_execute.command')
+    cmd_line=fields.Char()
+    std_out=fields.Char()
+    std_err=fields.Char()
+
+
 class command(models.Model):
 
     _name = 'cmd_execute.command'
 
     name = fields.Char()
+    history_ids=fields.One2many('cmd_execute.history','command_id')
     cmd_type = fields.Selection([("ws","Web service"),("wcmd", "Windows command"),("wps","Windows powershell")], required=True)
     endpoints_id=fields.Many2one('cmd_execute.endpoints')
-    model_id=fields.Many2one('ir.model', required=True)
+    model_id=fields.Many2one('ir.model', zrequired=True)
+    method=fields.Boolean(help="Tick if there is a method cmd_execute_method defined on the model")
     ref_ir_act_window=fields.Many2one(
             'ir.actions.act_window', 'Sidebar Action', readonly=True,
             help="Sidebar action to make this template available on records \
@@ -94,7 +107,13 @@ class command(models.Model):
         self.unlink_action(cr, uid, ids, context=context)
         return super(command, self).unlink(cr, uid, ids, context=context)
 
+    @api.multi    
+    def run_method(self):
+        if hasattr(self.env[self.model_id.model],'cmd_execute_method'):
+            self.env[self.model_id.model].cmd_execute_method(self)
+
     def execute(self,vals):
+        result={}
         cmd_line=self.ps_command_line
         for param in vals.keys():
             cmd_line += " -%s" % param
@@ -112,8 +131,17 @@ class command(models.Model):
                     data_rec[return_value.field_id.name]=result[return_value.name]
                     if return_value.return_type == 'int' and return_value.factor !=0:
                         data_rec[return_value.field_id.name]=int(result[return_value.name] * return_value.factor)
+            self.env['cmd_execute.history'].create({
+                'command_id': self.id,
+                'cmd_line': cmd_line,
+                'std_out': r.std_out,
+                'std_err':r.std_err
+                })
+
         except:
             pass
+
+        return result
                     
 
         

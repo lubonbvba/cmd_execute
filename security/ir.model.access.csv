@@ -3,3 +3,4 @@ access_cmd_execute_endpoints,access_cmd_execute_endpoints,model_cmd_execute_endp
 access_cmd_execute_parameters,access_cmd_execute_parameters,model_cmd_execute_parameters,,1,1,1,1
 access_cmd_execute_return_values,access_cmd_execute_return_values,model_cmd_execute_return_values,,1,1,1,1
 access_cmd_execute_command,access_cmd_execute_command,model_cmd_execute_command,,1,1,1,1
+access_cmd_execute_history,access_cmd_execute_history,model_cmd_execute_history,,1,1,1,1

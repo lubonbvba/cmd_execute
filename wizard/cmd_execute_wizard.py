@@ -53,17 +53,21 @@ class cmd_execute_wizard(models.TransientModel):
             xml_group = etree.SubElement(xml_form, 'group', {'colspan': '2'})
             etree.SubElement(xml_group, 'label', {
                 'string': '', 'colspan': '2'})
+            #pdb.set_trace()
             for parameter in editing_data.parameter_ids:
                 all_fields[parameter.name] = {
-                    'type': parameter.field_id.ttype, 'string': parameter.name,
+#                    'type': parameter.field_id.ttype or u'char', 
+                    'type': u'char', 
+                    'string': parameter.name,
                     'size': parameter.field_id.size or 256,
                     'default': '1234'}
                 etree.SubElement(xml_group, 'field', {
                     'name': parameter.name, 'nolabel': '0',
                     'attrs': (
                         "{'invisible':[('selection__" +
-                        parameter.name + "','=','remove')]}"),
-                    'colspan': '2'})                
+                        parameter.name  + "','=','remove')]}"),
+                    'colspan': '2'}) 
+            #pdb.set_trace()                       
             etree.SubElement(
                 xml_form, 'separator', {'string': '', 'colspan': '4'})
             xml_group3 = etree.SubElement(xml_form, 'footer', {})
@@ -76,7 +80,7 @@ class cmd_execute_wizard(models.TransientModel):
             root = xml_form.getroottree()
             result['arch'] = etree.tostring(root)
             result['fields'] = all_fields
-        #pdb.set_trace()
+       
         return result
 
 # class old_cmd_execute_wizard(orm.TransientModel):
@@ -137,11 +141,20 @@ class cmd_execute_wizard(models.TransientModel):
     @api.model
     def default_get(self, fields_list):
         res=super(cmd_execute_wizard,self).default_get(fields_list)
+        #pdb.set_trace()
         for field in fields_list:
             fname=self.env['cmd_execute.command'].browse(self.env.context['cmd_execute_object']).parameter_ids.search([('name','=',field)]).field_id.name
+            ftype=self.env['cmd_execute.command'].browse(self.env.context['cmd_execute_object']).parameter_ids.search([('name','=',field)]).field_id.ttype
             record=self.env[self.env.context['active_model']].browse(self.env.context['active_id'])
-            res[field]=record[fname]
+            res[field]=''
             #pdb.set_trace()
+            if fname:
+                if ftype == 'many2one':
+                    res[field]=record[fname].display_name
+                else:    
+                    res[field]=record[fname]
+
+        #pdb.set_trace()
         return res
     @api.model
     def create(self,vals=None):    
