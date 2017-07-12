@@ -12,7 +12,7 @@ import json
 class cmd_execute_history(models.Model):
 
     _name = 'cmd_execute.history'
-    _order = 'date_create desc'
+    _order = 'create_date desc'
     name = fields.Char()
     command_id=fields.Many2one('cmd_execute.command')
     cmd_line=fields.Char()
