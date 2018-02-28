@@ -141,10 +141,12 @@ class cmd_execute_wizard(models.TransientModel):
     @api.model
     def default_get(self, fields_list):
         res=super(cmd_execute_wizard,self).default_get(fields_list)
-        #pdb.set_trace()
+ #       pdb.set_trace()
         for field in fields_list:
-            fname=self.env['cmd_execute.command'].browse(self.env.context['cmd_execute_object']).parameter_ids.search([('name','=',field)]).field_id.name
-            ftype=self.env['cmd_execute.command'].browse(self.env.context['cmd_execute_object']).parameter_ids.search([('name','=',field)]).field_id.ttype
+            fname=self.env['cmd_execute.parameters'].search([('name','=',field),('command_id','=',self.env.context['cmd_execute_object'])]).field_id.name
+            ftype=self.env['cmd_execute.parameters'].search([('name','=',field),('command_id','=',self.env.context['cmd_execute_object'])]).field_id.ttype
+ #           fname=self.env['cmd_execute.command'].browse(self.env.context['cmd_execute_object']).parameter_ids.search([('name','=',field)]).field_id.name
+ #           ftype=self.env['cmd_execute.command'].browse(self.env.context['cmd_execute_object']).parameter_ids.search([('name','=',field)]).field_id.ttype
             record=self.env[self.env.context['active_model']].browse(self.env.context['active_id'])
             res[field]=''
             #pdb.set_trace()

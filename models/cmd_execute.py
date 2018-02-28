@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from openerp import models, fields, api
+from openerp import models, fields, api, exceptions
 import winrm,pdb
 
 from openerp import SUPERUSER_ID
@@ -41,7 +41,8 @@ class command(models.Model):
     return_values_ids=fields.One2many('cmd_execute.return_values',"command_id")
 
     ps_command_line=fields.Char(string="Powershell command line", help="Complete powershell as it will be executed on the server")
-    
+    ps_test_command_line_options=fields.Char(string="Test command line options")
+
     def create_action(self, cr, uid, ids, context=None):
         vals = {}
         action_obj = self.pool['ir.actions.act_window']
@@ -112,37 +113,53 @@ class command(models.Model):
         if hasattr(self.env[self.model_id.model],'cmd_execute_method'):
             self.env[self.model_id.model].cmd_execute_method(self)
 
+
     def execute(self,vals):
         result={}
         cmd_line=self.ps_command_line
         for param in vals.keys():
             cmd_line += " -%s" % param
             cmd_line += " '%s'" %  vals[param]
-        url=self.endpoints_id.url
-        user=self.endpoints_id.credential_id.user
-        passwd=self.endpoints_id.credential_id.decrypt()[0]
+
+        ep=self.endpoints_id    
+        url=ep.url
+        user=ep.credential_id.user
+        passwd=ep.credential_id.decrypt()[0]
         s = winrm.Session(url, auth=(user, passwd),server_cert_validation='ignore' , transport='credssp')
         r = s.run_ps(cmd_line)
+        self.env['cmd_execute.history'].create({
+                 'command_id': self.id,
+                 'cmd_line': cmd_line,
+                 'std_out': r.std_out,
+                 'std_err':r.std_err
+                })
         try:
-            result=json.loads(r.std_out)
+            result=json.loads(r.std_out.replace('\x07','').replace('\x15',''))
             data_rec=self.env[self.model_id.model].browse(self.env.context['active_id'])
             for return_value in self.return_values_ids:
                 if return_value.name in result.keys():
                     data_rec[return_value.field_id.name]=result[return_value.name]
                     if return_value.return_type == 'int' and return_value.factor !=0:
                         data_rec[return_value.field_id.name]=int(result[return_value.name] * return_value.factor)
-            self.env['cmd_execute.history'].create({
-                'command_id': self.id,
-                'cmd_line': cmd_line,
-                'std_out': r.std_out,
-                'std_err':r.std_err
-                })
-
         except:
             pass
-
+        #pdb.set_trace()
         return result
-                    
+
+
+    @api.multi
+    def ps_test_command(self):
+        cmd=self.ps_command_line
+        if self.ps_test_command_line_options:
+            cmd+= " " + self.ps_test_command_line_options
+        r=self.endpoints_id.execute(cmd)
+        raise exceptions.Warning(r)
+
+    @api.multi
+    def execute_custom(self,cmd_line=None,endpoints_id=None):
+        endpoints_id.execute(cmd_line)
+        pdb.set_trace()
+
 
         
 
@@ -183,13 +200,31 @@ class return_values(models.Model):
 
 
 class endpoints(models.Model):
-     _name = 'cmd_execute.endpoints'
+    _name = 'cmd_execute.endpoints'
 
-     name = fields.Char()
-     url=fields.Char()
-     cmd_type = fields.Selection( [("ws","Web service"),("wcmd", "Windows command"),("wps","Windows powershell")], required=True)
-     credential_id=fields.Many2one('lubon_credentials.credentials',  string='credential' )
-     #domain=lambda self: [('model', '=', self._name),('related_id', '=', self.id)],auto_join=True,
+    name = fields.Char()
+    url=fields.Char()
+    cmd_type = fields.Selection( [("ws","Web service"),("wcmd", "Windows command"),("wps","Windows powershell")], required=True)
+    credential_id=fields.Many2one('lubon_credentials.credentials',  string='credential' )
+#domain=lambda self: [('model', '=', self._name),('related_id', '=', self.id)],auto_join=True,
+    test_cmd=fields.Char(default='$env:computername')
 
+    ps_root_path=fields.Char(help="Root path of the powershell files")
 
-     ps_root_path=fields.Char(help="Root path of the powershell files")
+    @api.multi
+    def test_endpoint(self):
+        r=self.execute(self.test_cmd)
+        raise exceptions.Warning(r)
+
+    @api.multi
+    def execute(self,cmd_line):
+        url=self.url
+        user=self.credential_id.user
+        passwd=self.credential_id.decrypt()[0]
+        s = winrm.Session(url, auth=(user, passwd),server_cert_validation='ignore' , transport='credssp')
+        r = s.run_ps(cmd_line)
+        #pdb.set_trace()
+        try:
+            return json.loads(unicode(r.std_out, errors='ignore'),strict=False)
+        except:
+            return r.std_out

@@ -51,6 +51,8 @@
                             <page string="Powershell command">
                                 <group colspan="2" col="2">
                                     <field name="ps_command_line" />
+                                    <field name="ps_test_command_line_options" />
+                                    <button name="ps_test_command" string="Test" type="object"/>
                                 </group>
                             </page>
                             <page string="Parameters">
@@ -131,7 +133,9 @@
                                 <field name="credential_id" context="{'default_related_id' : active_id, 'default_model' : 'cmd_execute.endpoints' }"
                                 domain="[('model', '=', 'cmd_execute.endpoints'),('related_id', '=', active_id)]" />
                                 <field name="url" />
+                                <field name="test_cmd" />
                                 <!-- field name="model_ids" invisible="1" / -->
+                                <button name="test_endpoint" string="Test" type="object"/>
                             </group>
                         </div>
                     </sheet>
