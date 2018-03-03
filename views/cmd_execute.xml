@@ -62,6 +62,7 @@
                                         <field name="command_id" invisible="1"/>
                                         <field name="model_id" invisible="1"/>
                                         <field name="name"/>
+                                        <field name="mandatory"/>
                                         <field name="field_id" domain="[('model_id','=',model_id)]"/>
                                     </tree>
                                 </field>

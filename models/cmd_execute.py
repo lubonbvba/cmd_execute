@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
 from openerp import models, fields, api, exceptions
-import winrm,pdb
+import winrm,pdb,logging
 
 from openerp import SUPERUSER_ID
 #from openerp.osv import orm, fields
 from openerp.tools.translate import _
 import json
 
+logger = logging.getLogger(__name__)
 
 class cmd_execute_history(models.Model):
 
@@ -181,6 +182,7 @@ class parameters(models.Model):
 
      model_id=fields.Integer(calculate=_get_parent_model)
      field_id=fields.Many2one('ir.model.fields',help="Field to use for this parameter")
+     mandatory=fields.Boolean(help="Parameter required?")
 
 class return_values(models.Model):
      _name = 'cmd_execute.return_values'
@@ -217,14 +219,29 @@ class endpoints(models.Model):
         raise exceptions.Warning(r)
 
     @api.multi
-    def execute(self,cmd_line):
+    def execute(self,cmd_line,debug=False):
         url=self.url
         user=self.credential_id.user
         passwd=self.credential_id.decrypt()[0]
         s = winrm.Session(url, auth=(user, passwd),server_cert_validation='ignore' , transport='credssp')
         r = s.run_ps(cmd_line)
-        #pdb.set_trace()
+        if r.status_code != 0:
+            logger.error("Execute failed: %s" % r.std_err)
+            if debug:
+                raise exceptions.Warning(r.std_err)
         try:
-            return json.loads(unicode(r.std_out, errors='ignore'),strict=False)
+            result=json.loads(unicode(r.std_out, errors='ignore'),strict=False)
         except:
-            return r.std_out
+            result=r.std_out
+        
+        return result
+
+    @api.multi
+    def execute_json(self,cmd,debug=False):
+        cmd_line=cmd['cmd'] + " "
+        for key in cmd['parameters'].keys():
+            cmd_line += "-" + key + " " + cmd['parameters'][key] +  " "
+        result=self.execute(cmd_line,debug=True)
+        if debug:
+            pdb.set_trace()
+
