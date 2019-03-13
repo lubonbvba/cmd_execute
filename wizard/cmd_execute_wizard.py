@@ -183,7 +183,7 @@ class cmd_execute_wizard(models.TransientModel):
         #     if dict:
         #         model_obj.write(
         #             cr, uid, context.get('active_ids'), dict, context)
-        #pdb.set_trace()
+  
         result = super(cmd_execute_wizard, self).create({})
         command_line=self.env['cmd_execute.command'].browse(self.env.context['cmd_execute_object']).execute(vals)
 

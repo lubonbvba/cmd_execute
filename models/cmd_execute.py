@@ -114,7 +114,7 @@ class command(models.Model):
         if hasattr(self.env[self.model_id.model],'cmd_execute_method'):
             self.env[self.model_id.model].cmd_execute_method(self)
 
-
+    @api.multi        
     def execute(self,vals):
         result={}
         cmd_line=self.ps_command_line
@@ -134,6 +134,7 @@ class command(models.Model):
                  'std_out': r.std_out,
                  'std_err':r.std_err
                 })
+
         try:
             result=json.loads(r.std_out.replace('\x07','').replace('\x15',''))
             data_rec=self.env[self.model_id.model].browse(self.env.context['active_id'])
@@ -162,9 +163,45 @@ class command(models.Model):
         pdb.set_trace()
 
 
-        
+    @api.multi
+    def run_command(self,obj,vals=None,debug=False): 
+        #context = self.env.context.copy()
+        context={}
+        context['cmd_execute_object'] = self.id
+        action = {
+                    'name': self.name,
+                    'view_type': 'form',
+                    'view_mode': 'form',
+                    'res_model': 'cmd.execute.wizard',
+                    'context': context,
+                    'type': 'ir.actions.act_window',
+                    'target': 'new',
+                    'domain': [],
+                }
+        return action
 
+        # return {'name': _('Asset candidates'),'context': context,
+        #     'view_type': 'form',
+        #     'view_mode': 'form',
+        #     'res_model': 'add_quant_to_site.wizard',
+        #     'views': [(model_datas[0].res_id, 'form')],
+        #     'type': 'ir.actions.act_window',
+        #     'target': 'new',
+        #     }
+        # line_
 
+#         return {
+#                'name': 'Dispatch Wizard',
+#                'view_type': 'form',
+#                'view_mode': 'form',
+#                'res_model': 'vehicle.dispatch.wizard',
+#                'domain': [],
+#                'context': self.env.context,
+#                'res_id': dispatch_wizard.id,
+#                'type': 'ir.actions.act_window',
+#                'target': 'new',
+# #               'nodestroy': True,
+#             }
 
 
 
@@ -230,10 +267,15 @@ class endpoints(models.Model):
             if debug:
                 raise exceptions.Warning(r.std_err)
         try:
-            result=json.loads(unicode(r.std_out, errors='ignore'),strict=False)
+#            result=json.loads(unicode(r.std_out, errors='replace'),strict=False)
+            #result=json.loads(repr(r.std_out).decode('unicode-escape').encode('utf8'),strict=False)
+            result=json.loads(r.std_out,strict=False,encoding='ISO-8859-1')
+            #result=json.loads(r.std_out,strict=False,encoding='cp1257')
         except:
+            logging.error("Error occured during json loads")
             result=r.std_out
-        
+        #pdb.set_trace()
+
         return result
 
     @api.multi
