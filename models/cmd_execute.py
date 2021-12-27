@@ -257,11 +257,11 @@ class endpoints(models.Model):
         raise exceptions.Warning(r)
     @api.multi
     def execute(self,cmd_line,debug=False):
-        if self.cmd_type =='ps':
-            r=self.execute_ps(self.test_cmd)
+        if self.cmd_type =='wps':
+            r=self.execute_ps(cmd_line)
             return r
         if self.cmd_type=='mg':
-            r=self.execute_mg(self.test_cmd)
+            r=self.execute_mg(cmd_line)
             return r
     
 
