@@ -7,6 +7,7 @@ from openerp import SUPERUSER_ID
 #from openerp.osv import orm, fields
 from openerp.tools.translate import _
 import json
+import requests, msal 
 
 logger = logging.getLogger(__name__)
 
@@ -243,7 +244,7 @@ class endpoints(models.Model):
 
     name = fields.Char()
     url=fields.Char()
-    cmd_type = fields.Selection( [("ws","Web service"),("wcmd", "Windows command"),("wps","Windows powershell")], required=True)
+    cmd_type = fields.Selection( [("mg","MS Graph"),("ws","Web service"),("wcmd", "Windows command"),("wps","Windows powershell")], required=True)
     credential_id=fields.Many2one('lubon_credentials.credentials',  string='credential' )
 #domain=lambda self: [('model', '=', self._name),('related_id', '=', self.id)],auto_join=True,
     test_cmd=fields.Char(default='$env:computername')
@@ -254,9 +255,18 @@ class endpoints(models.Model):
     def test_endpoint(self):
         r=self.execute(self.test_cmd)
         raise exceptions.Warning(r)
-
     @api.multi
     def execute(self,cmd_line,debug=False):
+        if self.cmd_type =='ps':
+            r=self.execute_ps(self.test_cmd)
+            return r
+        if self.cmd_type=='mg':
+            r=self.execute_mg(self.test_cmd)
+            return r
+    
+
+    @api.multi
+    def execute_ps(self,cmd_line,debug=False):
         url=self.url
         user=self.credential_id.user
         passwd=self.credential_id.decrypt()[0]
@@ -274,9 +284,40 @@ class endpoints(models.Model):
         except:
             logging.error("Error occured during json loads")
             result=r.std_out
-        #pdb.set_trace()
+            #pdb.set_trace()
 
         return result
+    @api.multi
+    def execute_mg(self,cmd_line,debug=False):
+        url=self.url
+        client_id=self.credential_id.user
+        secret=self.credential_id.decrypt()[0]
+        app = msal.ConfidentialClientApplication(
+        client_id, authority=url,
+        client_credential=secret,
+        # token_cache=...  # Default cache is in memory only.
+                       # You can learn how to use SerializableTokenCache from
+                       # https://msal-python.rtfd.io/en/latest/#msal.SerializableTokenCache
+        )
+        result=None
+        result = app.acquire_token_silent(['https://graph.microsoft.com/.default'], account=None)
+        if not result:
+            logging.info("No suitable token exists in cache. Let's get a new one from AAD.")
+            result = app.acquire_token_for_client(scopes=['https://graph.microsoft.com/.default'])
+
+        if "access_token" in result:
+            # Calling graph using the access token
+            graph_data = requests.get(  # Use token to call downstream service
+            cmd_line,
+            headers={'Authorization': 'Bearer ' + result['access_token']}, ).json()
+            return (json.dumps(graph_data, indent=2))
+        else:
+            print(result.get("error"))
+            print(result.get("error_description"))
+            print(result.get("correlation_id"))  # You may need this when reporting a bug
+
+
+
 
     @api.multi
     def execute_json(self,cmd,debug=False):
