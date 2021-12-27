@@ -256,17 +256,17 @@ class endpoints(models.Model):
         r=self.execute(self.test_cmd)
         raise exceptions.Warning(r)
     @api.multi
-    def execute(self,cmd_line,debug=False):
+    def execute(self,cmd_line,debug=False,url=None):
         if self.cmd_type =='wps':
-            r=self.execute_ps(cmd_line)
+            r=self.execute_ps(cmd_line,url=url)
             return r
         if self.cmd_type=='mg':
-            r=self.execute_mg(cmd_line)
+            r=self.execute_mg(cmd_line,url=url)
             return r
     
 
     @api.multi
-    def execute_ps(self,cmd_line,debug=False):
+    def execute_ps(self,cmd_line,debug=False,url=None):
         url=self.url
         user=self.credential_id.user
         passwd=self.credential_id.decrypt()[0]
@@ -288,8 +288,9 @@ class endpoints(models.Model):
 
         return result
     @api.multi
-    def execute_mg(self,cmd_line,debug=False):
-        url=self.url
+    def execute_mg(self,cmd_line,debug=False,url=None):
+        if not url:
+            url=self.url
         client_id=self.credential_id.user
         secret=self.credential_id.decrypt()[0]
         app = msal.ConfidentialClientApplication(
@@ -310,7 +311,9 @@ class endpoints(models.Model):
             graph_data = requests.get(  # Use token to call downstream service
             cmd_line,
             headers={'Authorization': 'Bearer ' + result['access_token']}, ).json()
-            return (json.dumps(graph_data, indent=2))
+            return graph_data
+
+            #return (json.dumps(graph_data, indent=2))
         else:
             print(result.get("error"))
             print(result.get("error_description"))
